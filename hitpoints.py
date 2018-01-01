@@ -6,6 +6,17 @@ from math import ceil, floor
 
 
 def read_attribs(file):
+    '''
+    This function reads a CSV file and returns a dictionary of its contents.
+
+    Input:
+        file name location [string]
+    Returns:
+        csv_dict, DictReader object, ordered dictionary of rows of column name key-value pairs
+
+    https://docs.python.org/3.6/library/csv.html
+    '''
+
     csv_dict=dict()
     ind = 1
     with open(file) as csvfile:
@@ -18,13 +29,39 @@ def read_attribs(file):
 
 
 def roll_dice(num_rolls, num_sides):
-    # https://docs.python.org/3.6/library/random.html
-    # I use the choices routine so it picks k times from the options given in the range from 1 to num_sides
+    '''
+    All this function does is roll dice and sum the result.
+    Assumes all dice rolls use the same dice each time.
+
+    Input:
+        num_rolls [int] : How many times to roll the dice
+        num_sides [int] : How many sides the dice has
+    Returns:
+        sum(rolls) [int] : Sum of all the rolls
+
+
+    https://docs.python.org/3.6/library/random.html
+    I use the choices routine so it picks k times from the options given in the range from 1 to num_sides
+    '''
     rolls=random.choices(range(1, num_sides+1), k=num_rolls)
     return sum(rolls)
 
 
 def lookup_offense():
+    '''
+    This function reads the character file for the offensive player, reads the weapons file.
+    Next, remaps the character skill to a new 'Skill' class as a nested dictionary.
+        Any field with 'Skill' at the end of it will be mapped to the corresponding name as key.
+    The chosen weapon attributes are then added to the character attributes dictionary.
+    Additionally, the 'Shooting Skill' attribute is calculated and then added to the character attributes dictionary.
+    All of the above is to create a character profile dictionary-like object that will be used in other functions.
+
+    Input:
+        None
+    Returns:
+        c1_attribs, a csv.dictreader object.
+    '''
+
     print('\n' * 2)
 
     ''' Get Character 1 choice '''
@@ -66,6 +103,18 @@ def lookup_offense():
 
 
 def lookup_defence():
+    '''
+        This function reads the character file for the defensive player.
+        A 'Position Value' key is added to the character attributes dictionary.
+        All of the above is to create a character profile dictionary-like object that will be used in other functions.
+
+        Input:
+            None
+        Returns:
+            c2_attribs, a csv.dictreader object.
+    '''
+
+
     print('\n' * 2)
 
     ''' Get Character 2 choice '''
@@ -88,31 +137,44 @@ def lookup_defence():
 
 
 def shots_fired_calc(offense, defence):
+    '''
+        This function uses the offensive player's shooting skill as well as the defensive player's position value
+        to calculate the total number of shots taken
 
+        Input:
+            offense [dictionary] : Offensive character attributes dictionary
+            defence [dictionary] : Defensive character attributes dictionary
+        Returns:
+            sum(shots_fired_array) [int] : The total number of shots taken.
+
+    '''
+
+    # Calculate the initial fire rate array, which determines the number of times to roll the 3d6 dice.
     print('Shooting Skill: ', int(offense['Shooting Skill']))
     fire_rate = int(offense['Weapon']['Fire Rate'])
     print('Fire rate: ', fire_rate)
     fire_rate_array = [4] * int(floor(fire_rate / 4.0))
     if fire_rate % 4 > 0:
         fire_rate_array.append(fire_rate % 4)
-    print('fire_rate_array: ',fire_rate_array)
+    print('fire_rate_array: ', fire_rate_array)
 
-
-    skills_gap_array = [int(offense['Shooting Skill'])] * len(fire_rate_array)
+    # Subtract the dice rolls and defensive position from the fire rate array
+    shots_fired_array = [int(offense['Shooting Skill'])] * len(fire_rate_array)
     for ind in range(len(fire_rate_array)):
-        skills_gap_array[ind] -= roll_dice(3, 6) + int(defence['Position Value'])
-    print('skills_gap_array calced: ', skills_gap_array)
+        shots_fired_array[ind] -= roll_dice(3, 6) + int(defence['Position Value'])
+    print('shots_fired_array calced: ', shots_fired_array)
 
-    for ind in range(len(skills_gap_array)):
-        if skills_gap_array[ind] < 0:
-            skills_gap_array[ind] = 0
-        elif skills_gap_array[ind] == 0:
-            skills_gap_array[ind] = 1
-        elif skills_gap_array[ind] > fire_rate_array[ind]:
-            skills_gap_array[ind] = fire_rate_array[ind]
-    print('skills_gap_array returned: ', skills_gap_array)
+    # Adjust overages, underages to allowed max and min
+    for ind in range(len(shots_fired_array)):
+        if shots_fired_array[ind] < 0:
+            shots_fired_array[ind] = 0
+        elif shots_fired_array[ind] == 0:
+            shots_fired_array[ind] = 1
+        elif shots_fired_array[ind] > fire_rate_array[ind]:
+            shots_fired_array[ind] = fire_rate_array[ind]
+    print('shots_fired_array returned: ', shots_fired_array)
 
-    return sum(skills_gap_array)
+    return sum(shots_fired_array)
 
 def fired_hits_calc(offense, defence, shots_fired):
     print('\n' * 2)
